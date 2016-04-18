@@ -41,8 +41,9 @@ namespace treemove
             }
 
             ListBox.ObjectCollection items = listBoxFiles.Items;
-            var passedItems = new List<object>(items.Count);
+            var passedFilesNames = new List<string>(items.Count);
             var operation = (copy ? new FileOperationFunction(FileOperation.Copy) : new FileOperationFunction(FileOperation.Move));
+            var destAndTargets = new Dictionary<string, List<string>>();
 
             foreach (object item in items)
             {
@@ -58,12 +59,34 @@ namespace treemove
                 dest = dest.Replace("\\\\", "\\");
                 dest = dest.Replace(":", string.Empty);
                 dest = destRoot + dest;
+                List<string> value;
 
+                if (!(destAndTargets.TryGetValue(dest, out value)))
+                {
+                    value = new List<string>();
+                    value.Add(source);
+                    destAndTargets.Add(dest, value);
+                }
+                else
+                {
+                    value.Add(source);
+                }
+            }
+
+            foreach (string key in destAndTargets.Keys)
+            {
                 try
                 {
-                    if (operation(new string[] { source }, dest, Handle))
+                    List<string> files;
+
+                    if (!(destAndTargets.TryGetValue(key, out files)))
                     {
-                        passedItems.Add(item);
+                        continue;
+                    }
+
+                    if (operation(files.ToArray(), key, Handle))
+                    {
+                        passedFilesNames.AddRange(files);
                     }
                 }
                 catch (Exception exception)
@@ -79,9 +102,18 @@ namespace treemove
 
             listBoxFiles.BeginUpdate();
 
-            foreach (object passedItem in passedItems)
+            foreach (string passedFileName in passedFilesNames)
             {
-                listBoxFiles.Items.Remove(passedItem);
+                for (int index = 0; index < listBoxFiles.Items.Count; ++index)
+                {
+                    object item = listBoxFiles.Items[index];
+
+                    if (item.ToString() == passedFileName)
+                    {
+                        listBoxFiles.Items.Remove(item);
+                        break;
+                    }
+                }
             }
 
             listBoxFiles.EndUpdate();
