@@ -8,6 +8,8 @@ namespace treemove
     public partial class FormMain : Form
     {
         delegate bool FileOperationFunction(string[] fileNames, string destDirectory, IntPtr handle);
+        readonly string directorySeparatorString = Path.DirectorySeparatorChar.ToString();
+        readonly string volumeSeparatorString = Path.VolumeSeparatorChar.ToString();
 
         void addFileName(string fileName)
         {
@@ -40,88 +42,115 @@ namespace treemove
                 control.Enabled = false;
             }
 
-            ListBox.ObjectCollection items = listBoxFiles.Items;
-            var passedFilesNames = new List<string>(items.Count);
-            var operation = (copy ? new FileOperationFunction(FileOperation.Copy) : new FileOperationFunction(FileOperation.Move));
-            var destAndTargets = new Dictionary<string, List<string>>();
-
-            foreach (object item in items)
+            try
             {
-                string source = item.ToString();
-                string destRoot = comboBoxDest.Text;
+                ListBox.ObjectCollection items = listBoxFiles.Items;
+                var passedFilesNames = new List<string>(items.Count);
+                var operation = (copy ? new FileOperationFunction(FileOperation.Copy) : new FileOperationFunction(FileOperation.Move));
+                var destAndTargets = new Dictionary<string, List<string>>();
 
-                if (!(destRoot.EndsWith("\\")))
+                foreach (object item in items)
                 {
-                    destRoot = destRoot + "\\";
+                    string source = item.ToString();
+                    string destRoot = comboBoxDest.Text;
+
+                    if (!(destRoot.EndsWith(directorySeparatorString)))
+                    {
+                        destRoot += Path.DirectorySeparatorChar;
+                    }
+
+                    string dest = source;
+                    dest = dest.Replace("\\\\", directorySeparatorString);
+                    dest = dest.Replace(volumeSeparatorString, string.Empty);
+                    dest = destRoot + dest;
+                    int index = dest.LastIndexOf(directorySeparatorString);
+
+                    if (index < 0)
+                    {
+                        throw new Exception("コピー先作成不可\r\n" + dest);
+                    }
+
+                    dest = dest.Substring(0, index);
+                    List<string> value;
+
+                    if (!(destAndTargets.TryGetValue(dest, out value)))
+                    {
+                        value = new List<string>();
+                        value.Add(source);
+                        destAndTargets.Add(dest, value);
+                    }
+                    else
+                    {
+                        value.Add(source);
+                    }
                 }
 
-                string dest = source;
-                dest = dest.Replace("\\\\", "\\");
-                dest = dest.Replace(":", string.Empty);
-                dest = destRoot + dest;
-                List<string> value;
+                foreach (string key in destAndTargets.Keys)
+                {
+                    try
+                    {
+                        List<string> files;
 
-                if (!(destAndTargets.TryGetValue(dest, out value)))
-                {
-                    value = new List<string>();
-                    value.Add(source);
-                    destAndTargets.Add(dest, value);
+                        if (!(destAndTargets.TryGetValue(key, out files)))
+                        {
+                            continue;
+                        }
+
+                        var directoryInfo = new DirectoryInfo(key);
+
+                        if (!(directoryInfo.Exists))
+                        {
+                            directoryInfo.Create();
+                        }
+
+                        if (operation(files.ToArray(), key, Handle))
+                        {
+                            passedFilesNames.AddRange(files);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        DialogResult result = MessageBox.Show(exception.Message, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+
+                        if (result == DialogResult.Cancel)
+                        {
+                            break;
+                        }
+                    }
                 }
-                else
+
+                listBoxFiles.BeginUpdate();
+
+                foreach (string passedFileName in passedFilesNames)
                 {
-                    value.Add(source);
+                    for (int index = 0; index < listBoxFiles.Items.Count; ++index)
+                    {
+                        object item = listBoxFiles.Items[index];
+
+                        if (item.ToString() == passedFileName)
+                        {
+                            listBoxFiles.Items.Remove(item);
+                            break;
+                        }
+                    }
                 }
+
+                listBoxFiles.EndUpdate();
             }
-
-            foreach (string key in destAndTargets.Keys)
+            catch (Exception exception)
             {
-                try
-                {
-                    List<string> files;
-
-                    if (!(destAndTargets.TryGetValue(key, out files)))
-                    {
-                        continue;
-                    }
-
-                    if (operation(files.ToArray(), key, Handle))
-                    {
-                        passedFilesNames.AddRange(files);
-                    }
-                }
-                catch (Exception exception)
-                {
-                    DialogResult result = MessageBox.Show(exception.Message, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
-
-                    if (result == DialogResult.Cancel)
-                    {
-                        break;
-                    }
-                }
+                showErrorMessage(exception.Message);
             }
-
-            listBoxFiles.BeginUpdate();
-
-            foreach (string passedFileName in passedFilesNames)
-            {
-                for (int index = 0; index < listBoxFiles.Items.Count; ++index)
-                {
-                    object item = listBoxFiles.Items[index];
-
-                    if (item.ToString() == passedFileName)
-                    {
-                        listBoxFiles.Items.Remove(item);
-                        break;
-                    }
-                }
-            }
-
-            listBoxFiles.EndUpdate();
 
             foreach (Control control in controls)
             {
                 control.Enabled = true;
             }
+        }
+
+        void showErrorMessage(string message)
+        {
+            MessageBox.Show(message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         public FormMain()
@@ -208,7 +237,7 @@ namespace treemove
             }
             catch (Exception exception)
             {
-                MessageBox.Show(exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                showErrorMessage(exception.Message);
             }
         }
 
