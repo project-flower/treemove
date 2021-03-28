@@ -2,14 +2,14 @@
 
 namespace Win32Api
 {
-    static class Shell32
+    public static class Shell32
     {
         /// <summary>
         /// shell32.dllのファイル名
         /// </summary>
-        const string DLLNAME = "shell32.dll";
+        public const string AssemblyName = "shell32.dll";
 
-        [DllImport(DLLNAME, CharSet = CharSet.Unicode)]
-        extern public static int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
+        [DllImport(AssemblyName, CharSet = CharSet.Unicode)]
+        public extern static int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
     }
 }

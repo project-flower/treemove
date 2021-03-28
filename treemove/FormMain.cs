@@ -7,11 +7,32 @@ namespace treemove
 {
     public partial class FormMain : Form
     {
-        delegate bool FileOperationFunction(string[] fileNames, string destDirectory, IntPtr handle);
-        readonly string directorySeparatorString = Path.DirectorySeparatorChar.ToString();
-        readonly string volumeSeparatorString = Path.VolumeSeparatorChar.ToString();
+        #region Private Classes
 
-        void addFileName(string fileName)
+        private delegate bool FileOperationFunction(string[] fileNames, string destDirectory, IntPtr handle);
+
+        #endregion
+
+        #region Private Fields
+
+        private readonly string directorySeparatorString = Path.DirectorySeparatorChar.ToString();
+        private readonly string volumeSeparatorString = Path.VolumeSeparatorChar.ToString();
+
+        #endregion
+
+        #region Public Methods
+
+        public FormMain()
+        {
+            InitializeComponent();
+            FormBorderStyle = FormBorderStyle.Sizable;
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void addFileName(string fileName)
         {
             if (listBoxFiles.Items.IndexOf(fileName) >= 0)
             {
@@ -21,7 +42,7 @@ namespace treemove
             listBoxFiles.Items.Add(fileName);
         }
 
-        bool getDropData(DragEventArgs dragEventArgs, out string[] data)
+        private bool getDropData(DragEventArgs dragEventArgs, out string[] data)
         {
             data = (dragEventArgs.Data.GetData(DataFormats.FileDrop)) as string[];
 
@@ -33,7 +54,7 @@ namespace treemove
             return true;
         }
 
-        void operate(bool copy)
+        private void operate(bool copy)
         {
             Control.ControlCollection controls = Controls;
 
@@ -148,16 +169,14 @@ namespace treemove
             }
         }
 
-        void showErrorMessage(string message)
+        private void showErrorMessage(string message)
         {
             MessageBox.Show(message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        public FormMain()
-        {
-            InitializeComponent();
-            FormBorderStyle = FormBorderStyle.Sizable;
-        }
+        #endregion
+
+        // Designer's Methods
 
         private void buttonAdd_Click(object sender, EventArgs e)
         {
@@ -172,6 +191,16 @@ namespace treemove
             {
                 addFileName(fileName);
             }
+        }
+
+        private void buttonCopy_Click(object sender, EventArgs e)
+        {
+            operate(true);
+        }
+
+        private void buttonMove_Click(object sender, EventArgs e)
+        {
+            operate(false);
         }
 
         private void buttonRemove_Click(object sender, EventArgs e)
@@ -203,16 +232,6 @@ namespace treemove
             }
 
             listBoxFiles.EndUpdate();
-        }
-
-        private void buttonCopy_Click(object sender, EventArgs e)
-        {
-            operate(true);
-        }
-
-        private void buttonMove_Click(object sender, EventArgs e)
-        {
-            operate(false);
         }
 
         private void comboBoxDest_DragDrop(object sender, DragEventArgs e)
