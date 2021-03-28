@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 
@@ -7,19 +6,6 @@ namespace treemove
 {
     public partial class FormMain : Form
     {
-        #region Private Classes
-
-        private delegate bool FileOperationFunction(string[] fileNames, string destDirectory, IntPtr handle);
-
-        #endregion
-
-        #region Private Fields
-
-        private readonly string directorySeparatorString = Path.DirectorySeparatorChar.ToString();
-        private readonly string volumeSeparatorString = Path.VolumeSeparatorChar.ToString();
-
-        #endregion
-
         #region Public Methods
 
         public FormMain()
@@ -42,6 +28,14 @@ namespace treemove
             listBoxFiles.Items.Add(fileName);
         }
 
+        private void enableControls(bool enabled)
+        {
+            foreach (Control control in Controls)
+            {
+                control.Enabled = enabled;
+            }
+        }
+
         private bool getDropData(DragEventArgs dragEventArgs, out string[] data)
         {
             data = (dragEventArgs.Data.GetData(DataFormats.FileDrop)) as string[];
@@ -56,122 +50,79 @@ namespace treemove
 
         private void operate(bool copy)
         {
-            Control.ControlCollection controls = Controls;
+            int count = listBoxFiles.Items.Count;
 
-            foreach (Control control in controls)
+            if (count < 1)
             {
-                control.Enabled = false;
+                return;
             }
+
+            var files = new string[count];
+
+            for (int i = 0; i < count; ++i)
+            {
+                files[i] = listBoxFiles.Items[i].ToString();
+            }
+
+            enableControls(false);
 
             try
             {
-                ListBox.ObjectCollection items = listBoxFiles.Items;
-                var passedFilesNames = new List<string>(items.Count);
-                var operation = (copy ? new FileOperationFunction(FileOperation.Copy) : new FileOperationFunction(FileOperation.Move));
-                var destAndTargets = new Dictionary<string, List<string>>();
+                int[] completedFileNames = mainEngine.Operate(files, comboBoxDest.Text, copy, Handle);
+                removeItems(completedFileNames);
+            }
+            catch (Exception exception)
+            {
+                showErrorMessage(exception.Message);
+            }
+            finally
+            {
+                enableControls(true);
+            }
+        }
 
-                foreach (object item in items)
+        private void removeItems(int[] indices)
+        {
+            if (indices == null)
+            {
+                return;
+            }
+
+            int length = indices.Length;
+
+            if (length < 1)
+            {
+                return;
+            }
+
+            listBoxFiles.BeginUpdate();
+            var sortedIndices = new int[length];
+            Array.Copy(indices, sortedIndices, indices.Length);
+            Array.Sort(sortedIndices);
+
+            try
+            {
+                for (int i = 0; i < sortedIndices.Length; ++i)
                 {
-                    string source = item.ToString();
-                    string destRoot = comboBoxDest.Text;
-
-                    if (!(destRoot.EndsWith(directorySeparatorString)))
-                    {
-                        destRoot += Path.DirectorySeparatorChar;
-                    }
-
-                    string dest = source;
-                    dest = dest.Replace("\\\\", directorySeparatorString);
-                    dest = dest.Replace(volumeSeparatorString, string.Empty);
-                    dest = destRoot + dest;
-                    int index = dest.LastIndexOf(directorySeparatorString);
-
-                    if (index < 0)
-                    {
-                        throw new Exception("コピー先作成不可\r\n" + dest);
-                    }
-
-                    dest = dest.Substring(0, index);
-                    List<string> value;
-
-                    if (!(destAndTargets.TryGetValue(dest, out value)))
-                    {
-                        value = new List<string>();
-                        value.Add(source);
-                        destAndTargets.Add(dest, value);
-                    }
-                    else
-                    {
-                        value.Add(source);
-                    }
+                    listBoxFiles.Items.RemoveAt(sortedIndices[i] - i);
                 }
-
-                foreach (string key in destAndTargets.Keys)
-                {
-                    try
-                    {
-                        List<string> files;
-
-                        if (!(destAndTargets.TryGetValue(key, out files)))
-                        {
-                            continue;
-                        }
-
-                        var directoryInfo = new DirectoryInfo(key);
-
-                        if (!(directoryInfo.Exists))
-                        {
-                            directoryInfo.Create();
-                        }
-
-                        if (operation(files.ToArray(), key, Handle))
-                        {
-                            passedFilesNames.AddRange(files);
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        DialogResult result = MessageBox.Show(exception.Message, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
-
-                        if (result == DialogResult.Cancel)
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                listBoxFiles.BeginUpdate();
-
-                foreach (string passedFileName in passedFilesNames)
-                {
-                    for (int index = 0; index < listBoxFiles.Items.Count; ++index)
-                    {
-                        object item = listBoxFiles.Items[index];
-
-                        if (item.ToString() == passedFileName)
-                        {
-                            listBoxFiles.Items.Remove(item);
-                            break;
-                        }
-                    }
-                }
-
-                listBoxFiles.EndUpdate();
             }
             catch (Exception exception)
             {
                 showErrorMessage(exception.Message);
             }
 
-            foreach (Control control in controls)
-            {
-                control.Enabled = true;
-            }
+            listBoxFiles.EndUpdate();
         }
 
         private void showErrorMessage(string message)
         {
-            MessageBox.Show(message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            showMessage(message, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private DialogResult showMessage(string text, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            return MessageBox.Show(this, text, Text, buttons, icon);
         }
 
         #endregion
@@ -191,6 +142,11 @@ namespace treemove
             {
                 addFileName(fileName);
             }
+        }
+
+        private void buttonClear_Click(object sender, EventArgs e)
+        {
+            listBoxFiles.Items.Clear();
         }
 
         private void buttonCopy_Click(object sender, EventArgs e)
@@ -295,9 +251,10 @@ namespace treemove
                 }
                 catch (Exception exception)
                 {
-                    DialogResult result = MessageBox.Show(exception.Message, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+                    DialogResult dialogResult = showMessage(
+                        string.Format("{0}\r\n\r\n{1}", exception.Message, data), MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
 
-                    if (result == DialogResult.Cancel)
+                    if (dialogResult == DialogResult.Cancel)
                     {
                         break;
                     }
@@ -308,6 +265,18 @@ namespace treemove
         private void listBoxFiles_DragEnter(object sender, DragEventArgs e)
         {
             e.Effect = (e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.All : DragDropEffects.None);
+        }
+
+        private void mainEngine_ExceptionOccurred(object sender, MainEngine.ExceptionOccurredEventArgs e)
+        {
+            bool canContinue = e.CanContinue;
+            MessageBoxButtons buttons = canContinue ? MessageBoxButtons.OKCancel : MessageBoxButtons.OK;
+            DialogResult dialogResult = showMessage(e.Exception.Message, buttons, MessageBoxIcon.Error);
+
+            if (canContinue)
+            {
+                e.Continue = dialogResult == DialogResult.OK;
+            }
         }
     }
 }
