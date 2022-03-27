@@ -62,6 +62,11 @@ namespace treemove
 
         public int[] Operate(string[] files, string destination, bool copy, IntPtr handle)
         {
+            if (string.IsNullOrEmpty(destination))
+            {
+                throw new Exception("コピー／移動先が空です。");
+            }
+
             var completedFileIndices = new List<int>();
 
             try
