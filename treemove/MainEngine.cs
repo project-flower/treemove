@@ -130,7 +130,7 @@ namespace treemove
 
                             do
                             {
-                                current = isCurrent(destRoot);
+                                current = IsCurrent(destRoot);
 
                                 if (current)
                                 {
@@ -145,7 +145,7 @@ namespace treemove
                                     continue;
                                 }
 
-                                parent = isParent(destRoot);
+                                parent = IsParent(destRoot);
 
                                 if (parent)
                                 {
@@ -181,8 +181,11 @@ namespace treemove
 
                     if (!(destAndTargets.TryGetValue(dest, out List<FileItem> value)))
                     {
-                        value = new List<FileItem>();
-                        value.Add(new FileItem(source, i));
+                        value = new List<FileItem>
+                        {
+                            new FileItem(source, i)
+                        };
+
                         destAndTargets.Add(dest, value);
                     }
                     else
@@ -195,9 +198,7 @@ namespace treemove
                 {
                     try
                     {
-                        List<FileItem> files_;
-
-                        if (!(destAndTargets.TryGetValue(key, out files_)))
+                        if (!(destAndTargets.TryGetValue(key, out List<FileItem> files_)))
                         {
                             continue;
                         }
@@ -248,18 +249,18 @@ namespace treemove
 
         #region Private Methods
 
-        private bool isCurrent(string path)
+        private bool IsCurrent(string path)
         {
             return
-                path.StartsWith(string.Format(".{0}", Path.DirectorySeparatorChar)) ||
-                path.StartsWith(string.Format(".{0}", Path.PathSeparator));
+                path.StartsWith($".{Path.DirectorySeparatorChar}") ||
+                path.StartsWith($".{Path.PathSeparator}");
         }
 
-        private bool isParent(string path)
+        private bool IsParent(string path)
         {
             return
-                path.StartsWith(string.Format("..{0}", Path.DirectorySeparatorChar)) ||
-                path.StartsWith(string.Format("..{0}", Path.PathSeparator));
+                path.StartsWith($"..{Path.DirectorySeparatorChar}") ||
+                path.StartsWith($"..{Path.PathSeparator}");
         }
 
         #endregion

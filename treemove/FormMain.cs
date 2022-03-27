@@ -18,7 +18,7 @@ namespace treemove
 
         #region Private Methods
 
-        private void addFileName(string fileName)
+        private void AddFileName(string fileName)
         {
             if (listBoxFiles.Items.IndexOf(fileName) >= 0)
             {
@@ -28,7 +28,7 @@ namespace treemove
             listBoxFiles.Items.Add(fileName);
         }
 
-        private void enableControls(bool enabled)
+        private void EnableControls(bool enabled)
         {
             foreach (Control control in Controls)
             {
@@ -36,7 +36,7 @@ namespace treemove
             }
         }
 
-        private bool getDropData(DragEventArgs dragEventArgs, out string[] data)
+        private bool GetDropData(DragEventArgs dragEventArgs, out string[] data)
         {
             data = (dragEventArgs.Data.GetData(DataFormats.FileDrop)) as string[];
 
@@ -48,7 +48,7 @@ namespace treemove
             return true;
         }
 
-        private void operate(bool copy)
+        private void Operate(bool copy)
         {
             int count = listBoxFiles.Items.Count;
 
@@ -64,24 +64,24 @@ namespace treemove
                 files[i] = listBoxFiles.Items[i].ToString();
             }
 
-            enableControls(false);
+            EnableControls(false);
 
             try
             {
                 int[] completedFileNames = mainEngine.Operate(files, comboBoxDest.Text, copy, Handle);
-                removeItems(completedFileNames);
+                RemoveItems(completedFileNames);
             }
             catch (Exception exception)
             {
-                showErrorMessage(exception.Message);
+                ShowErrorMessage(exception.Message);
             }
             finally
             {
-                enableControls(true);
+                EnableControls(true);
             }
         }
 
-        private void removeItems(int[] indices)
+        private void RemoveItems(int[] indices)
         {
             if (indices == null)
             {
@@ -109,18 +109,18 @@ namespace treemove
             }
             catch (Exception exception)
             {
-                showErrorMessage(exception.Message);
+                ShowErrorMessage(exception.Message);
             }
 
             listBoxFiles.EndUpdate();
         }
 
-        private void showErrorMessage(string message)
+        private void ShowErrorMessage(string message)
         {
-            showMessage(message, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ShowMessage(message, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        private DialogResult showMessage(string text, MessageBoxButtons buttons, MessageBoxIcon icon)
+        private DialogResult ShowMessage(string text, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             return MessageBox.Show(this, text, Text, buttons, icon);
         }
@@ -140,7 +140,7 @@ namespace treemove
 
             foreach (string fileName in fileNames)
             {
-                addFileName(fileName);
+                AddFileName(fileName);
             }
         }
 
@@ -151,12 +151,12 @@ namespace treemove
 
         private void buttonCopy_Click(object sender, EventArgs e)
         {
-            operate(true);
+            Operate(true);
         }
 
         private void buttonMove_Click(object sender, EventArgs e)
         {
-            operate(false);
+            Operate(false);
         }
 
         private void buttonRemove_Click(object sender, EventArgs e)
@@ -192,9 +192,7 @@ namespace treemove
 
         private void comboBoxDest_DragDrop(object sender, DragEventArgs e)
         {
-            string[] dropData;
-
-            if (!getDropData(e, out dropData))
+            if (!GetDropData(e, out string[] dropData))
             {
                 return;
             }
@@ -212,7 +210,7 @@ namespace treemove
             }
             catch (Exception exception)
             {
-                showErrorMessage(exception.Message);
+                ShowErrorMessage(exception.Message);
             }
         }
 
@@ -223,9 +221,7 @@ namespace treemove
 
         private void listBoxFiles_DragDrop(object sender, DragEventArgs e)
         {
-            string[] dropData;
-
-            if (!getDropData(e, out dropData))
+            if (!GetDropData(e, out string[] dropData))
             {
                 return;
             }
@@ -247,12 +243,12 @@ namespace treemove
                         }
                     }
 
-                    addFileName(info.FullName);
+                    AddFileName(info.FullName);
                 }
                 catch (Exception exception)
                 {
-                    DialogResult dialogResult = showMessage(
-                        string.Format("{0}\r\n\r\n{1}", exception.Message, data), MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
+                    DialogResult dialogResult = ShowMessage(
+                        $"{exception.Message}\r\n\r\n{data}", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
 
                     if (dialogResult == DialogResult.Cancel)
                     {
@@ -271,7 +267,7 @@ namespace treemove
         {
             bool canContinue = e.CanContinue;
             MessageBoxButtons buttons = canContinue ? MessageBoxButtons.OKCancel : MessageBoxButtons.OK;
-            DialogResult dialogResult = showMessage(e.Exception.Message, buttons, MessageBoxIcon.Error);
+            DialogResult dialogResult = ShowMessage(e.Exception.Message, buttons, MessageBoxIcon.Error);
 
             if (canContinue)
             {

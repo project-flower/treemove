@@ -1,24 +1,30 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using Win32Api;
 
 namespace treemove
 {
-    static class FileOperation
+    public static class FileOperation
     {
-        public static bool operate(FO func, string[] fileNames, string pTo, FOF flags, IntPtr handle)
+        public static bool Operate(FO func, string[] fileNames, string pTo, FOF flags, IntPtr handle)
         {
-            SHFILEOPSTRUCT shell = new SHFILEOPSTRUCT();
-            shell.hwnd = handle;
-            shell.wFunc = func;
-            shell.pFrom = string.Empty;
+            SHFILEOPSTRUCT shell = new SHFILEOPSTRUCT
+            {
+                hwnd = handle,
+                wFunc = func,
+                pFrom = null
+            };
+
+            var builder = new StringBuilder();
 
             foreach (string fileName in fileNames)
             {
-                shell.pFrom += fileName + '\0';
+                builder.AppendFormat("{0}{1}", fileName, '\0');
             }
 
-            shell.pFrom += '\0';
+            builder.Append('\0');
+            shell.pFrom = builder.ToString();
             shell.pTo = pTo;
             shell.fFlags = flags;
             shell.fAnyOperationsAborted = false;
@@ -38,12 +44,12 @@ namespace treemove
 
         public static bool Copy(string[] fileNames, string destDirectory, IntPtr handle)
         {
-            return operate(FO.COPY, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
+            return Operate(FO.COPY, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
         }
 
         public static bool Move(string[] fileNames, string destDirectory, IntPtr handle)
         {
-            return operate(FO.MOVE, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
+            return Operate(FO.MOVE, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
         }
     }
 }
