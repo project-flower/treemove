@@ -246,15 +246,15 @@ namespace treemove
         private bool isCurrent(string path)
         {
             return
-                path.StartsWith(string.Format(".{0}" + Path.DirectorySeparatorChar.ToString())) ||
-                path.StartsWith(string.Format(".{0}" + Path.PathSeparator.ToString()));
+                path.StartsWith(string.Format(".{0}", Path.DirectorySeparatorChar)) ||
+                path.StartsWith(string.Format(".{0}", Path.PathSeparator));
         }
 
         private bool isParent(string path)
         {
             return
-                path.StartsWith(string.Format("..{0}" + Path.DirectorySeparatorChar.ToString())) ||
-                path.StartsWith(string.Format("..{0}" + Path.PathSeparator.ToString()));
+                path.StartsWith(string.Format("..{0}", Path.DirectorySeparatorChar)) ||
+                path.StartsWith(string.Format("..{0}", Path.PathSeparator));
         }
 
         #endregion
