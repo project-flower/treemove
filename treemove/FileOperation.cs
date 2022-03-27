@@ -1,11 +1,12 @@
 ﻿using System;
+using System.IO;
 using Win32Api;
 
 namespace treemove
 {
     static class FileOperation
     {
-        static bool operate(FO func, string[] fileNames, string pTo, FOF flags, IntPtr handle)
+        public static bool operate(FO func, string[] fileNames, string pTo, FOF flags, IntPtr handle)
         {
             SHFILEOPSTRUCT shell = new SHFILEOPSTRUCT();
             shell.hwnd = handle;
@@ -23,7 +24,16 @@ namespace treemove
             shell.fAnyOperationsAborted = false;
             shell.hNameMappings = IntPtr.Zero;
             shell.lpszProgressTitle = string.Empty;
-            return (Shell32.SHFileOperation(ref shell) == 0);
+            int result = Shell32.SHFileOperation(ref shell);
+
+            if (result == 0) return true;
+
+            if (Shell32.GetSHFileOperationErrorMessage(result, out string message))
+            {
+                throw new IOException(message);
+            }
+
+            throw new IOException($"SHFileOperation エラーコード: {result:X2}");
         }
 
         public static bool Copy(string[] fileNames, string destDirectory, IntPtr handle)
