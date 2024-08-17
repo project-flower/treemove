@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             this.buttonAdd = new System.Windows.Forms.Button();
             this.buttonRemove = new System.Windows.Forms.Button();
             this.buttonClear = new System.Windows.Forms.Button();
@@ -76,7 +77,7 @@
             this.labelSource.AutoSize = true;
             this.labelSource.Location = new System.Drawing.Point(12, 38);
             this.labelSource.Name = "labelSource";
-            this.labelSource.Size = new System.Drawing.Size(57, 12);
+            this.labelSource.Size = new System.Drawing.Size(42, 12);
             this.labelSource.TabIndex = 3;
             this.labelSource.Text = "&Source:";
             // 
@@ -102,7 +103,7 @@
             this.labelDest.AutoSize = true;
             this.labelDest.Location = new System.Drawing.Point(12, 185);
             this.labelDest.Name = "labelDest";
-            this.labelDest.Size = new System.Drawing.Size(47, 12);
+            this.labelDest.Size = new System.Drawing.Size(31, 12);
             this.labelDest.TabIndex = 5;
             this.labelDest.Text = "&Dest:";
             // 
@@ -162,6 +163,7 @@
             this.Controls.Add(this.buttonRemove);
             this.Controls.Add(this.buttonAdd);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "FormMain";
             this.Text = "Tree Move";
             this.ResumeLayout(false);
