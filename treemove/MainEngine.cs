@@ -5,6 +5,7 @@ using System.IO;
 
 namespace treemove
 {
+    [DesignerCategory("Code")]
     public class MainEngine : Component
     {
         #region Public Classes
