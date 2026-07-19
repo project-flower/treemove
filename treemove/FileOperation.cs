@@ -1,45 +1,102 @@
 ﻿using System;
 using System.IO;
-using System.Text;
-using Win32Api;
+using System.Runtime.InteropServices;
+using NativeMethods;
 
 namespace treemove
 {
-    public static class FileOperation
+    public class FileOperation : ComSupporter
     {
         public static bool Operate(FO func, string[] fileNames, string pTo, FOF flags, IntPtr handle)
         {
-            SHFILEOPSTRUCT shell = new SHFILEOPSTRUCT
-            {
-                hwnd = handle,
-                wFunc = func,
-                pFrom = null
-            };
+            if (fileNames == null || fileNames.Length == 0) return true;
 
-            var builder = new StringBuilder();
+            Type foType = Type.GetTypeFromCLSID(CLSID.FileOperation);
+            object coclass = null;
+            IntPtr iUnknown = IntPtr.Zero;
+            IntPtr iFileOpPtr = IntPtr.Zero;
+            IFileOperation fileOp = null;
+            IntPtr destPtr = IntPtr.Zero;
+            IShellItem destShellItem = null;
 
-            foreach (string fileName in fileNames)
+            try
             {
-                builder.AppendFormat("{0}{1}", fileName, '\0');
+                coclass = Activator.CreateInstance(foType);
+
+                // Get IUnknown for coclass and QI for IFileOperation
+                iUnknown = Marshal.GetIUnknownForObject(coclass);
+                Guid iidFileOp = IID.IFileOperation;
+                int qiHr = Marshal.QueryInterface(iUnknown, ref iidFileOp, out iFileOpPtr);
+                ThrowIfFailed(qiHr);
+
+                // Get managed wrapper for IFileOperation
+                fileOp = GetObjectForIUnknown<IFileOperation>(iFileOpPtr);
+
+                // Set operation flags
+                int hr = fileOp.SetOperationFlags((uint)flags);
+                ThrowIfFailed(hr);
+
+                // Create destination IShellItem
+                Guid iidShell = IID.IShellItem;
+                hr = Shell32.SHCreateItemFromParsingName(pTo, IntPtr.Zero, ref iidShell, out destPtr);
+                ThrowIfFailed(hr);
+
+                destShellItem = GetObjectForIUnknown<IShellItem>(destPtr);
+                // release raw pointer, RCW holds reference
+                destPtr.Release();
+
+                foreach (string sourcePath in fileNames)
+                {
+                    if (string.IsNullOrEmpty(sourcePath)) continue;
+
+                    IntPtr srcPtr = IntPtr.Zero;
+                    IShellItem srcShellItem = null;
+
+                    try
+                    {
+                        Guid iidSrc = IID.IShellItem;
+                        hr = Shell32.SHCreateItemFromParsingName(sourcePath, IntPtr.Zero, ref iidSrc, out srcPtr);
+                        ThrowIfFailed(hr);
+                        srcShellItem = GetObjectForIUnknown<IShellItem>(srcPtr);
+                        srcPtr.Release();
+
+                        switch (func)
+                        {
+                            case FO.COPY:
+                                hr = fileOp.CopyItem(srcShellItem, destShellItem, null, IntPtr.Zero);
+                                break;
+                            case FO.MOVE:
+                                hr = fileOp.MoveItem(srcShellItem, destShellItem, null, IntPtr.Zero);
+                                break;
+                            default:
+                                throw new NotSupportedException("指定された操作はサポートされていません。");
+                        }
+
+                        ThrowIfFailed(hr);
+                    }
+                    finally
+                    {
+                        srcShellItem.Release();
+                    }
+                }
+
+                hr = fileOp.PerformOperations();
+                ThrowIfFailed(hr);
+                hr = fileOp.GetAnyOperationsAborted(out bool aborted);
+                ThrowIfFailed(hr);
+
+                if (!aborted) return true;
+
+                throw new IOException("ファイル操作はユーザーによって中止されました。");
             }
-
-            builder.Append('\0');
-            shell.pFrom = builder.ToString();
-            shell.pTo = pTo;
-            shell.fFlags = flags;
-            shell.fAnyOperationsAborted = false;
-            shell.hNameMappings = IntPtr.Zero;
-            shell.lpszProgressTitle = string.Empty;
-            int result = Shell32.SHFileOperation(ref shell);
-
-            if (result == 0) return true;
-
-            if (Shell32.GetSHFileOperationErrorMessage(result, out string message))
+            finally
             {
-                throw new IOException(message);
+                destShellItem.Release();
+                fileOp.Release();
+                iFileOpPtr.Release();
+                iUnknown.Release();
+                coclass.Release();
             }
-
-            throw new IOException($"SHFileOperation エラーコード: {result:X2}");
         }
 
         public static bool Copy(string[] fileNames, string destDirectory, IntPtr handle)

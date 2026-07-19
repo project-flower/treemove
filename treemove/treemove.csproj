@@ -54,10 +54,12 @@
       <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
     <Compile Include="MainEngine.cs" />
+    <Compile Include="MarshalHelper.cs" />
+    <Compile Include="NativeMethods\ShObjIdl_core.h.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Shell32.cs" />
-    <Compile Include="shellapi.h.cs" />
+    <Compile Include="NativeMethods\Shell32.cs" />
+    <Compile Include="NativeMethods\shellapi.h.cs" />
     <EmbeddedResource Include="FormMain.resx">
       <DependentUpon>FormMain.cs</DependentUpon>
     </EmbeddedResource>
