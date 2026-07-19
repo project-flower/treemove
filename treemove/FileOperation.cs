@@ -44,12 +44,12 @@ namespace treemove
 
         public static bool Copy(string[] fileNames, string destDirectory, IntPtr handle)
         {
-            return Operate(FO.COPY, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
+            return Operate(FO.COPY, fileNames, destDirectory, (FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
         }
 
         public static bool Move(string[] fileNames, string destDirectory, IntPtr handle)
         {
-            return Operate(FO.MOVE, fileNames, destDirectory, (FOF.SILENT | FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
+            return Operate(FO.MOVE, fileNames, destDirectory, (FOF.ALLOWUNDO | FOF.NOCONFIRMMKDIR), handle);
         }
     }
 }
